@@ -1,6 +1,10 @@
+
 package main
 
+import(
+	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/run"
+)
 
 func main(){
-	RunServer()
+	run.RunServer()
 }
