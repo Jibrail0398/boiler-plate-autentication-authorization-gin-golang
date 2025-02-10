@@ -3,6 +3,7 @@ package run
 import (
 	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/db"
 	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/handler"
+	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/service"
 	"log"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -43,6 +44,14 @@ func RunServer() {
 	handler := handler.NewAuthenticationHandler();
 
 	r.GET("/",handler.Login)
+
+	emailConfig,err := service.GetGomailConfig()
+
+	if err!=nil{
+		log.Fatal("Gagal load Gomail config")
+	}
+
+	log.Fatal(emailConfig)
 
 	r.Run();
 
