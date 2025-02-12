@@ -1,9 +1,13 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
+	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/helper"
 	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/service"
+
+	"github.com/gin-gonic/gin"
 )
+
+
 
 type authenticationHandler struct{
 	AuthenticationService service.AuthenticationService
@@ -15,6 +19,13 @@ func NewAuthenticationHandler(authenticationService service.AuthenticationServic
 	}
 }
 
+func (h *authenticationHandler) TryHelper(c *gin.Context){
+	tryHelper,_ := helper.GenerateCodeVerif(5);
+
+	c.AbortWithStatusJSON(200,gin.H{
+		"Hasil Response":tryHelper,
+	})
+}
 func(h *authenticationHandler) Login(c *gin.Context) {
 	c.AbortWithStatusJSON(200,gin.H{
 		"message":"Behasil login",

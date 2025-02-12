@@ -4,6 +4,7 @@ import (
 	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/db"
 	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/handler"
 	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/service"
+	
 	"log"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -41,9 +42,12 @@ func RunServer() {
 	//Endpoint
 	r := gin.Default();
 
-
+	
 	service := service.NewAuthenticationService()
 	handler := handler.NewAuthenticationHandler(service);
+	
+	//endpoint untuk coba helper function
+	r.GET("/try-helper",handler.TryHelper)
 
 	r.GET("/",handler.Login)
 	r.POST("/send-email",handler.SendVerificationCode)

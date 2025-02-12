@@ -19,7 +19,6 @@ func NewAuthenticationService() AuthenticationService {
 }
 
 
-
 func (s * authenticationService) SendVerificationCode()error{
 
 	emailConfig,err := helper.GetGomailConfig();
