@@ -41,17 +41,20 @@ func RunServer() {
 	//Endpoint
 	r := gin.Default();
 
-	handler := handler.NewAuthenticationHandler();
+
+	service := service.NewAuthenticationService()
+	handler := handler.NewAuthenticationHandler(service);
 
 	r.GET("/",handler.Login)
+	r.POST("/send-email",handler.SendVerificationCode)
 
-	emailConfig,err := service.GetGomailConfig()
+	
 
 	if err!=nil{
 		log.Fatal("Gagal load Gomail config")
 	}
 
-	log.Fatal(emailConfig)
+	
 
 	r.Run();
 
