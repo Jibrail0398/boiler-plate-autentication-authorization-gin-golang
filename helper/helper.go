@@ -8,6 +8,8 @@ import(
 	"fmt"
 	"crypto/rand"
 	"math/big"
+	"html/template"
+	"bytes"
 )
 
 func GetGomailConfig() (model.EmailVerifConfig,error) {
@@ -54,6 +56,29 @@ func GenerateCodeVerif(length int) (string,error){
 	
 
 	return string(code),nil
-
 	
+}
+
+func ParseEmailTemplate(filename string, data map[string]string) (string,error){
+	// Baca file HTML
+	htmlBytes, err := os.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	htmlString := string(htmlBytes)
+
+	// Parse template
+	tmpl, err := template.New("email").Parse(htmlString)
+	if err != nil {
+		return "", err
+	}
+
+	// Replace variabel dalam template
+	var body bytes.Buffer
+	err = tmpl.Execute(&body, data)
+	if err != nil {
+		return "", err
+	}
+
+	return body.String(), nil
 }

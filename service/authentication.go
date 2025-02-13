@@ -26,13 +26,23 @@ func (s * authenticationService) SendVerificationCode()error{
 		return err 
 	}
 
+	randomCode,err := helper.GenerateCodeVerif(5)
+
+	if err!=nil{
+		return err
+	}
+	dataSend := map[string]string{
+		"Email":emailConfig.CONFIG_AUTH_EMAIL,
+		"Code":randomCode,
+	}
+	htmlBody,err := helper.ParseEmailTemplate("views/email.html",dataSend)
 
 	mailer := gomail.NewMessage()
     mailer.SetHeader("From", emailConfig.CONFIG_SENDER_NAME)
-    mailer.SetHeader("To", "izamikatsuka@gmail.com",)
+    mailer.SetHeader("To", "takayama123.87@gmail.com",)
     
     mailer.SetHeader("Subject", "Test mail")
-    mailer.SetBody("text/html", "Hello, <b>have a nice day</b>")
+    mailer.SetBody("text/html", htmlBody)
     mailer.Attach("./kucing muntah.jpg")
 
 	dialer := gomail.NewDialer(

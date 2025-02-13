@@ -42,7 +42,7 @@ func(h *authenticationHandler)SendVerificationCode(c *gin.Context){
 	}
 
 	c.AbortWithStatusJSON(
-		500,gin.H{
+		200,gin.H{
 			"Message":"Email already sent",
 		})
 }
