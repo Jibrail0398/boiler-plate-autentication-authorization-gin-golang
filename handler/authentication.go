@@ -34,6 +34,9 @@ func(h *authenticationHandler) Login(c *gin.Context) {
 
 func(h *authenticationHandler)SendVerificationCode(c *gin.Context){
 	err:= h.AuthenticationService.SendVerificationCode()
+	client:= helper.ConnectToRedis()
+
+	randomCode := helper.GetDataRedis("randomCode", client)
 	if err!=nil{
 		c.AbortWithStatusJSON(500,gin.H{
 			"Message":err,
@@ -44,5 +47,6 @@ func(h *authenticationHandler)SendVerificationCode(c *gin.Context){
 	c.AbortWithStatusJSON(
 		200,gin.H{
 			"Message":"Email already sent",
+			"Random Code":randomCode,
 		})
 }

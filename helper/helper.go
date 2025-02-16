@@ -10,6 +10,7 @@ import(
 	"math/big"
 	"html/template"
 	"bytes"
+	
 )
 
 func GetGomailConfig() (model.EmailVerifConfig,error) {
@@ -82,3 +83,6 @@ func ParseEmailTemplate(filename string, data map[string]string) (string,error){
 
 	return body.String(), nil
 }
+
+
+

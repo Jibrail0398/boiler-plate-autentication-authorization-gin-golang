@@ -1,9 +1,8 @@
 package service
 
 import (
-	
-	"fmt"
 	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/helper"
+	"fmt"
 	"gopkg.in/gomail.v2"
 )
 
@@ -28,6 +27,9 @@ func (s * authenticationService) SendVerificationCode()error{
 
 	randomCode,err := helper.GenerateCodeVerif(5)
 
+	client := helper.ConnectToRedis()
+	helper.StoreWithTime("randomCode",randomCode, 300, client)
+
 	if err!=nil{
 		return err
 	}
@@ -35,11 +37,16 @@ func (s * authenticationService) SendVerificationCode()error{
 		"Email":emailConfig.CONFIG_AUTH_EMAIL,
 		"Code":randomCode,
 	}
+
 	htmlBody,err := helper.ParseEmailTemplate("views/email.html",dataSend)
+
+	if err!=nil{
+		return err
+	}
 
 	mailer := gomail.NewMessage()
     mailer.SetHeader("From", emailConfig.CONFIG_SENDER_NAME)
-    mailer.SetHeader("To", "takayama123.87@gmail.com",)
+    mailer.SetHeader("To", "izamikatsuka@gmail.com",)
     
     mailer.SetHeader("Subject", "Test mail")
     mailer.SetBody("text/html", htmlBody)
