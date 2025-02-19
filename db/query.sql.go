@@ -108,7 +108,7 @@ INSERT INTO users(
 type RegisterManualParams struct {
 	Name     string
 	Email    string
-	Password string
+	Password sql.NullString
 	Verified bool
 }
 
@@ -119,5 +119,21 @@ func (q *Queries) RegisterManual(ctx context.Context, arg RegisterManualParams) 
 		arg.Password,
 		arg.Verified,
 	)
+	return err
+}
+
+const verifiedUser = `-- name: VerifiedUser :exec
+UPDATE users
+SET verified = $1
+WHERE email = $2
+`
+
+type VerifiedUserParams struct {
+	Verified bool
+	Email    string
+}
+
+func (q *Queries) VerifiedUser(ctx context.Context, arg VerifiedUserParams) error {
+	_, err := q.db.ExecContext(ctx, verifiedUser, arg.Verified, arg.Email)
 	return err
 }

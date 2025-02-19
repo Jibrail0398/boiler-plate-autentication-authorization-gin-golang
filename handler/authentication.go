@@ -43,21 +43,19 @@ func(h *authenticationHandler) Login(c *gin.Context) {
 }
 
 func(h *authenticationHandler)SendVerificationCode(c *gin.Context){
-	err:= h.AuthenticationService.SendVerificationCode()
-	client:= helper.ConnectToRedis()
-
-	randomCode := helper.GetDataRedis("randomCode", client)
+	email:=c.Request.FormValue("email")
+	
+	err:= h.AuthenticationService.SendVerificationCode(email)
+	
 	if err!=nil{
-		c.AbortWithStatusJSON(500,gin.H{
-			"Message":err,
-		})
+		c.AbortWithStatusJSON(200,gin.H{"Error":err.Error()})
 		return
 	}
 
 	c.AbortWithStatusJSON(
 		200,gin.H{
 			"Message":"Email already sent",
-			"Random Code":randomCode,
+			
 		})
 }
 
@@ -166,7 +164,7 @@ func (h *authenticationHandler) ManualRegister(c *gin.Context){
 	registerManualParams := db.RegisterManualParams{
 		Name: newUser.Name,
 		Email: newUser.Email,
-		Password: newUser.Password,
+		Password: sql.NullString{String:newUser.Password},
 		Verified: false,
 
 	}
@@ -176,7 +174,39 @@ func (h *authenticationHandler) ManualRegister(c *gin.Context){
 		c.AbortWithStatusJSON(400,gin.H{"Error":err.Error()})
 		return
 	}
-	c.AbortWithStatusJSON(200,registerManualParams)
+
+	//Send Verification Email
+	err= h.AuthenticationService.SendVerificationCode(registerManualParams.Email)
+	if err!=nil{
+		c.AbortWithStatusJSON(500,gin.H{"Error":err.Error()})
+		return
+	}
+
+	c.AbortWithStatusJSON(201,gin.H{
+		"Status":"Success",
+		"Message":"User registered successfully, See your email to verify your Account",
+
+	})
 
 	
+}
+
+func(s *authenticationHandler) VerifyUser(c *gin.Context) {
+
+	email := c.Request.FormValue("email")
+	value := c.Request.FormValue("code")
+
+	verifiedUserParams := &db.VerifiedUserParams{
+		Verified: true,
+		Email: email,
+	}
+
+	err := s.AuthenticationService.VerifyUser("randomCode",value,*verifiedUserParams)
+	if err!=nil{
+		c.AbortWithStatusJSON(400,gin.H{"error":err.Error()})
+		return 
+	}
+
+	c.AbortWithStatusJSON(200,gin.H{"Message":"User has been successfully verified"})
+
 }

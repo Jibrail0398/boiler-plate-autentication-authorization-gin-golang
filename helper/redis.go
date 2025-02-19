@@ -30,22 +30,22 @@ func StoreWithTime(key string, value string, timelong time.Duration, client *red
 	return nil
 }
 
-func GetDataRedis(key string, client *redis.Client) string{
+func GetDataRedis(key string, client *redis.Client) (string,error){
 	ctx := context.Background()
 	redisGet := client.Get(ctx,key)
 
 	if err:=redisGet.Err();err!=nil{
 		
-		return "data not found in redisGet"
+		return "nil",err
 	}
 
 	res, err := redisGet.Result()
     if err != nil {
         
-        return "data not found in res"
+        return "",err
     }
 
-	return res
+	return res,nil
 
 	
 }

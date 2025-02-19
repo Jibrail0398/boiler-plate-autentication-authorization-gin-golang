@@ -60,6 +60,7 @@ func RunServer() {
 
 	r.POST("/register",handler.ManualRegister)
 	r.POST("/send-email",handler.SendVerificationCode)
+	r.POST("/verify",handler.VerifyUser)
 	
 
 	if err!=nil{

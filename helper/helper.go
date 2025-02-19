@@ -111,9 +111,6 @@ func GenerateStateOauthCookie() string {
 }
 
 
-
-
-
 func containsSpecialCharacter(fl validator.FieldLevel) bool {
 	re := regexp.MustCompile(`[!@#\$%\^&\*\(\)_\+\-=\[\]{};':"\\|,.<>\/?]+`)
 	return re.MatchString(fl.Field().String())

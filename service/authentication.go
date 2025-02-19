@@ -10,14 +10,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/gomail.v2"
 	"time"
+
 )
 
 
 
 type AuthenticationService interface{
-	SendVerificationCode() error
+	SendVerificationCode(email string) error
 	RegisterGoogle(arg db.RegisterGoogleParams) error
 	RegisterManual(arg db.RegisterManualParams) error
+	VerifyUser(key string, value string, arg db.VerifiedUserParams) (error)
 }
 
 type authenticationService struct{
@@ -29,7 +31,7 @@ func NewAuthenticationService(db *db.Queries) AuthenticationService {
 }
 
 
-func (s * authenticationService) SendVerificationCode()error{
+func (s * authenticationService) SendVerificationCode(email string)error{
 
 	emailConfig,err := helper.GetGomailConfig();
 	if err!=nil{
@@ -57,11 +59,11 @@ func (s * authenticationService) SendVerificationCode()error{
 
 	mailer := gomail.NewMessage()
     mailer.SetHeader("From", emailConfig.CONFIG_SENDER_NAME)
-    mailer.SetHeader("To", "izamikatsuka@gmail.com",)
+    mailer.SetHeader("To", email)
     
-    mailer.SetHeader("Subject", "Test mail")
+    mailer.SetHeader("Subject", "Verification Code")
     mailer.SetBody("text/html", htmlBody)
-    mailer.Attach("./kucing muntah.jpg")
+    
 
 	dialer := gomail.NewDialer(
         emailConfig.CONFIG_SMTP_HOST,
@@ -73,7 +75,7 @@ func (s * authenticationService) SendVerificationCode()error{
 	
     err = dialer.DialAndSend(mailer)
     if err != nil {
-		return fmt.Errorf("failed to send email: %w", err)
+		return fmt.Errorf("failed to send email to email address %s: %w",email, err)
     }
 
 	return nil
@@ -108,17 +110,30 @@ func (s * authenticationService) RegisterGoogle(arg db.RegisterGoogleParams ) er
 
 func (s *authenticationService) RegisterManual(arg db.RegisterManualParams) error{
 
+	//check if email has been registered
+	
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
-
 	
-	hashedPassword,err := bcrypt.GenerateFromPassword([]byte(arg.Password),bcrypt.DefaultCost)
+	user,err := s.db.GetUsersByEmail(ctx,arg.Email)
+	
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		
+		return fmt.Errorf("error while get user by email: %w", err)
+	}
+	
+	if user != (db.User{}) {
+		
+		return fmt.Errorf("email has been registered")
+	}
+	
+	hashedPassword,err := bcrypt.GenerateFromPassword([]byte(arg.Password.String),bcrypt.DefaultCost)
 	if err!=nil{
 		
 		return fmt.Errorf("error while hashing password: %v",err)
 	}
 
-	arg.Password = string(hashedPassword)
+	arg.Password.String = string(hashedPassword)
 
 
 	err = s.db.RegisterManual(ctx, arg)
@@ -128,6 +143,30 @@ func (s *authenticationService) RegisterManual(arg db.RegisterManualParams) erro
 		return fmt.Errorf("error while registering user: %v",err)
 	}
 
+
+	return nil
+}
+
+func(s *authenticationService) VerifyUser(key string, value string, arg db.VerifiedUserParams) (error){
+	
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+	client := helper.ConnectToRedis()
+	code,err := helper.GetDataRedis(key,client)
+	if err!=nil{
+		return fmt.Errorf("verification code expired")
+	}
+
+	if value != code{
+		return fmt.Errorf("otp doesn't match")
+	}
+
+	err = s.db.VerifiedUser(ctx,arg)
+
+	if err!=nil{
+		return fmt.Errorf("error while updating verify user: %v", err.Error())
+	}
 
 	return nil
 }

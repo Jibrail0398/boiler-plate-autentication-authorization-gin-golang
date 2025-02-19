@@ -20,3 +20,11 @@ INSERT INTO users(
     $1,$2,$3,$4
 );
 
+-- name: VerifiedUser :exec
+UPDATE users
+SET verified = $1
+WHERE email = $2;
+
+
+
+
