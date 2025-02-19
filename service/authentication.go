@@ -1,20 +1,31 @@
 package service
 
 import (
+	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/db"
 	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/helper"
+	"context"
+	"errors"
+	"database/sql"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/gomail.v2"
+	"time"
 )
+
 
 
 type AuthenticationService interface{
 	SendVerificationCode() error
+	RegisterGoogle(arg db.RegisterGoogleParams) error
+	RegisterManual(arg db.RegisterManualParams) error
 }
 
-type authenticationService struct{}
+type authenticationService struct{
+	db *db.Queries
+}
 
-func NewAuthenticationService() AuthenticationService {
-	return &authenticationService{}
+func NewAuthenticationService(db *db.Queries) AuthenticationService {
+	return &authenticationService{db:db}
 }
 
 
@@ -59,12 +70,64 @@ func (s * authenticationService) SendVerificationCode()error{
         emailConfig.CONFIG_AUTH_PASSWORD,
 		
     )
-
 	
     err = dialer.DialAndSend(mailer)
     if err != nil {
 		return fmt.Errorf("failed to send email: %w", err)
     }
+
+	return nil
+}
+
+func (s * authenticationService) RegisterGoogle(arg db.RegisterGoogleParams ) error {
+	ctx := context.Background()
+
+
+	user,err:= s.db.GetUsersByEmail(ctx,arg.Email)
+	if err!=nil{
+		if errors.Is(err, sql.ErrNoRows){
+			return fmt.Errorf("user with email %s not found",arg.Email)
+		}
+		return fmt.Errorf("error get user data by email: %v",err)
+	}
+
+	if !user.Password.Valid  && !user.OauthID.Valid{
+
+		err = s.db.RegisterGoogle(ctx,arg)
+	
+		if err!=nil{
+			return fmt.Errorf("error insert user to database: %v",err)
+			
+		}
+	}
+	
+
+
+	return nil
+}
+
+func (s *authenticationService) RegisterManual(arg db.RegisterManualParams) error{
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+	
+	hashedPassword,err := bcrypt.GenerateFromPassword([]byte(arg.Password),bcrypt.DefaultCost)
+	if err!=nil{
+		
+		return fmt.Errorf("error while hashing password: %v",err)
+	}
+
+	arg.Password = string(hashedPassword)
+
+
+	err = s.db.RegisterManual(ctx, arg)
+
+	if err!=nil{
+		
+		return fmt.Errorf("error while registering user: %v",err)
+	}
+
 
 	return nil
 }

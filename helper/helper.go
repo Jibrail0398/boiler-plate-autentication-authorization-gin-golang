@@ -10,6 +10,9 @@ import(
 	"math/big"
 	"html/template"
 	"bytes"
+	"encoding/base64"
+	"regexp"
+	"github.com/go-playground/validator/v10"
 	
 )
 
@@ -84,5 +87,46 @@ func ParseEmailTemplate(filename string, data map[string]string) (string,error){
 	return body.String(), nil
 }
 
+func GetOauthGoogleConfig() (model.GoogleOauthConfig,error) {
+	err := godotenv.Load()
+	if err!=nil{
+		return model.GoogleOauthConfig{}, fmt.Errorf("failed to load env file")
+	}
 
+	client_id := os.Getenv("CLIENT_ID");
+	client_secret := os.Getenv("CLIENT_SECRET");
+
+	googleOauthConfig := model.GoogleOauthConfig{
+		CLIENT_ID: client_id,
+		CLIENT_SECRET: client_secret,
+	}
+
+	return googleOauthConfig,nil
+}
+
+func GenerateStateOauthCookie() string {
+    b := make([]byte, 16)
+    rand.Read(b)
+    return base64.URLEncoding.EncodeToString(b)
+}
+
+
+
+
+
+func containsSpecialCharacter(fl validator.FieldLevel) bool {
+	re := regexp.MustCompile(`[!@#\$%\^&\*\(\)_\+\-=\[\]{};':"\\|,.<>\/?]+`)
+	return re.MatchString(fl.Field().String())
+}
+
+
+func containsNumber(fl validator.FieldLevel) bool {
+	re := regexp.MustCompile(`[0-9]+`)
+	return re.MatchString(fl.Field().String())
+}
+
+func RegisterNewValidator(validate validator.Validate){
+	validate.RegisterValidation("contains_special", containsSpecialCharacter)
+	validate.RegisterValidation("contains_number", containsNumber)
+}
 

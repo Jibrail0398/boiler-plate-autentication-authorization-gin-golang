@@ -7,10 +7,11 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const getUsers = `-- name: GetUsers :many
-SELECT id, name, email, password, created FROM users
+SELECT id, name, email, password, oauth_provider, oauth_id, verified, created, updated FROM users
 `
 
 func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
@@ -27,7 +28,11 @@ func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
 			&i.Name,
 			&i.Email,
 			&i.Password,
+			&i.OauthProvider,
+			&i.OauthID,
+			&i.Verified,
 			&i.Created,
+			&i.Updated,
 		); err != nil {
 			return nil, err
 		}
@@ -42,17 +47,77 @@ func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
-const insertUsers = `-- name: InsertUsers :exec
-INSERT INTO users(name,email,password) VALUES($1,$2,$3)
+const getUsersByEmail = `-- name: GetUsersByEmail :one
+SELECT id, name, email, password, oauth_provider, oauth_id, verified, created, updated FROM users
+WHERE email = $1
 `
 
-type InsertUsersParams struct {
+func (q *Queries) GetUsersByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUsersByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.Password,
+		&i.OauthProvider,
+		&i.OauthID,
+		&i.Verified,
+		&i.Created,
+		&i.Updated,
+	)
+	return i, err
+}
+
+const registerGoogle = `-- name: RegisterGoogle :exec
+INSERT INTO users(
+    name,email,oauth_provider,oauth_id,verified
+    ) 
+    VALUES(
+        $1,$2,$3,$4,$5
+    )
+`
+
+type RegisterGoogleParams struct {
+	Name          string
+	Email         string
+	OauthProvider sql.NullString
+	OauthID       sql.NullString
+	Verified      bool
+}
+
+func (q *Queries) RegisterGoogle(ctx context.Context, arg RegisterGoogleParams) error {
+	_, err := q.db.ExecContext(ctx, registerGoogle,
+		arg.Name,
+		arg.Email,
+		arg.OauthProvider,
+		arg.OauthID,
+		arg.Verified,
+	)
+	return err
+}
+
+const registerManual = `-- name: RegisterManual :exec
+INSERT INTO users(
+    name,email,password,verified
+)VALUES(
+    $1,$2,$3,$4
+)
+`
+
+type RegisterManualParams struct {
 	Name     string
 	Email    string
 	Password string
+	Verified bool
 }
 
-func (q *Queries) InsertUsers(ctx context.Context, arg InsertUsersParams) error {
-	_, err := q.db.ExecContext(ctx, insertUsers, arg.Name, arg.Email, arg.Password)
+func (q *Queries) RegisterManual(ctx context.Context, arg RegisterManualParams) error {
+	_, err := q.db.ExecContext(ctx, registerManual,
+		arg.Name,
+		arg.Email,
+		arg.Password,
+		arg.Verified,
+	)
 	return err
 }
