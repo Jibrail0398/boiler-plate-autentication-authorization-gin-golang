@@ -4,13 +4,14 @@ import (
 	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/db"
 	"Jibrail0398/boiler-plate-autentication-authorization-gin-golang/helper"
 	"context"
-	"errors"
 	"database/sql"
+	"errors"
 	"fmt"
-	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/gomail.v2"
+	
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/gomail.v2"
 )
 
 
@@ -18,7 +19,8 @@ import (
 type AuthenticationService interface{
 	SendVerificationCode(email string) error
 	RegisterGoogle(arg db.RegisterGoogleParams) error
-	RegisterManual(arg db.RegisterManualParams) error
+	ManualRegister(arg db.RegisterManualParams) error
+	ManualLogin(email string ,password string) (string ,error) 
 	VerifyUser(key string, value string, arg db.VerifiedUserParams) (error)
 }
 
@@ -47,7 +49,7 @@ func (s * authenticationService) SendVerificationCode(email string)error{
 		return err
 	}
 	dataSend := map[string]string{
-		"Email":emailConfig.CONFIG_AUTH_EMAIL,
+		"Email":email,
 		"Code":randomCode,
 	}
 
@@ -108,7 +110,7 @@ func (s * authenticationService) RegisterGoogle(arg db.RegisterGoogleParams ) er
 	return nil
 }
 
-func (s *authenticationService) RegisterManual(arg db.RegisterManualParams) error{
+func (s *authenticationService) ManualRegister(arg db.RegisterManualParams) error{
 
 	//check if email has been registered
 	
@@ -129,7 +131,6 @@ func (s *authenticationService) RegisterManual(arg db.RegisterManualParams) erro
 	
 	hashedPassword,err := bcrypt.GenerateFromPassword([]byte(arg.Password.String),bcrypt.DefaultCost)
 	if err!=nil{
-		
 		return fmt.Errorf("error while hashing password: %v",err)
 	}
 
@@ -169,5 +170,41 @@ func(s *authenticationService) VerifyUser(key string, value string, arg db.Verif
 	}
 
 	return nil
+}
+
+func (s *authenticationService) ManualLogin(email string ,password string) (string,error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+	//Get Data By Email
+	user,err:= s.db.GetUsersByEmail(ctx,email);
+
+	//throw error if user not found
+	if err!= nil && errors.Is(err,sql.ErrNoRows){
+		return "",fmt.Errorf("user with email %s not found",email)
+	}
+
+	//throw error if user not verified
+	if !user.Verified{
+		return "",fmt.Errorf("email has not been verified")
+	}
+
+	//throw error if password not correct
+	
+	err =  bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(password))
+	if err!=nil{
+		fmt.Println("password from db:",user.Password.String)
+		fmt.Println(password)
+		return "",fmt.Errorf("password inccorect")
+	}
+
+	//generate token JWT
+
+	token,err := helper.GenerateJWT(user.Name,user.Email);
+	if err!=nil{
+		return "",fmt.Errorf("error generate token")
+	}
+
+	return token,nil
 }
 

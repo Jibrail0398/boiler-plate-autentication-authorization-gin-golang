@@ -59,6 +59,7 @@ func RunServer() {
     r.GET("/google/callback", handler.HandleGoogleCallback)
 
 	r.POST("/register",handler.ManualRegister)
+	r.POST("/login", handler.ManualLogin)
 	r.POST("/send-email",handler.SendVerificationCode)
 	r.POST("/verify",handler.VerifyUser)
 	

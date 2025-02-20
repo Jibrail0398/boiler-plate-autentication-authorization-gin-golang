@@ -94,6 +94,7 @@ func (h *authenticationHandler) HandleGoogleLogin(c *gin.Context) {
 
 func (h *authenticationHandler) HandleGoogleCallback(c *gin.Context){
 
+	randomstate := helper.GenerateStateOauthCookie()
 	state := c.Query("state")
     if state != randomstate {
         c.AbortWithStatusJSON(400,gin.H{"Error":"States does not match"})
@@ -107,8 +108,7 @@ func (h *authenticationHandler) HandleGoogleCallback(c *gin.Context){
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
-
-	log.Println("Received token:", token)
+	// log.Println("Received token:", token)
 
 	client := googleOauthConfig.Client(context.Background(), token)
     resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
@@ -118,7 +118,7 @@ func (h *authenticationHandler) HandleGoogleCallback(c *gin.Context){
     }
     defer resp.Body.Close()	
 
-	// Decode respons JSON dari Google API
+	
     var userInfo struct {
         ID    string `json:"id"`
         Email string `json:"email"`
@@ -146,12 +146,12 @@ func (h *authenticationHandler) HandleGoogleCallback(c *gin.Context){
 
 func (h *authenticationHandler) ManualRegister(c *gin.Context){
 	
-	var newUser model.LoginRequest
+	var newUser model.RegisterRequest
 
 	//Get Request
 	if err:= c.ShouldBind(&newUser); err!=nil{
 		c.AbortWithStatusJSON(400,gin.H{
-			"Error ":"Error when bind request to JSON",
+			"Error ":"Error while bind request ",
 			"Message":err.Error(),
 		})
 		return
@@ -173,13 +173,13 @@ func (h *authenticationHandler) ManualRegister(c *gin.Context){
 	registerManualParams := db.RegisterManualParams{
 		Name: newUser.Name,
 		Email: newUser.Email,
-		Password: sql.NullString{String:newUser.Password},
+		Password: sql.NullString{String:newUser.Password,Valid: true},
 		Verified: false,
 
 	}
-	err := h.AuthenticationService.RegisterManual(registerManualParams)
+	err := h.AuthenticationService.ManualRegister(registerManualParams)
 	if err!=nil{
-		log.Println("error insert data user:", err)
+		
 		c.AbortWithStatusJSON(400,gin.H{"Error":err.Error()})
 		return
 	}
@@ -194,7 +194,7 @@ func (h *authenticationHandler) ManualRegister(c *gin.Context){
 	c.AbortWithStatusJSON(201,gin.H{
 		"Status":"Success",
 		"Message":"User registered successfully, See your email to verify your Account",
-
+		
 	})
 
 	
@@ -218,4 +218,31 @@ func(s *authenticationHandler) VerifyUser(c *gin.Context) {
 
 	c.AbortWithStatusJSON(200,gin.H{"Message":"User has been successfully verified"})
 
+}
+
+
+func(h *authenticationHandler) ManualLogin(c *gin.Context){
+	
+	var user model.LoginRequest
+
+	if err := c.ShouldBind(&user); err!=nil{
+		c.AbortWithStatusJSON(500,gin.H{
+			"Error ":"Error while bind request ",
+			"Message":err.Error(),
+		})
+		return
+	}
+
+	token,err:= h.AuthenticationService.ManualLogin(user.Email,user.Password)
+
+	if err!=nil{
+		c.AbortWithStatusJSON(500,gin.H{"Error":err.Error()})
+		return
+	}
+
+	c.AbortWithStatusJSON(200,gin.H{
+		"Message":"Login Succeed",
+		"email":user.Email,
+		"token":token,
+	})
 }

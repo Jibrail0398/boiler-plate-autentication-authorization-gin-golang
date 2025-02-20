@@ -18,11 +18,16 @@ type GoogleOauthConfig struct{
 	CLIENT_SECRET string
 }
 
-type LoginRequest struct {
+type RegisterRequest struct {
 	Name     string `json:"name" validate:"required"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8,contains_number,contains_special"`
 	
+}
+
+type LoginRequest struct{
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8,contains_number,contains_special"`
 }
 
 type Claims struct {
