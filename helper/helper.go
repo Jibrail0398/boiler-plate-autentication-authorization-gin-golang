@@ -104,6 +104,8 @@ func GetOauthGoogleConfig() (model.GoogleOauthConfig,error) {
 	return googleOauthConfig,nil
 }
 
+
+
 func GenerateStateOauthCookie() string {
     b := make([]byte, 16)
     rand.Read(b)

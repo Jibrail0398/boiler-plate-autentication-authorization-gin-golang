@@ -1,5 +1,8 @@
 package model
 
+import(
+	"github.com/golang-jwt/jwt/v5"
+)
 
 
 type EmailVerifConfig struct{
@@ -20,4 +23,10 @@ type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=8,contains_number,contains_special"`
 	
+}
+
+type Claims struct {
+	Username string `json:"username"`
+	Email     string `json:"email"`
+	jwt.RegisteredClaims
 }

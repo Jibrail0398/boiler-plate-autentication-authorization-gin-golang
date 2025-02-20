@@ -30,7 +30,16 @@ func NewAuthenticationHandler(authenticationService service.AuthenticationServic
 }
 
 func (h *authenticationHandler) TryHelper(c *gin.Context){
-	tryHelper,_ := helper.GenerateCodeVerif(5);
+	tryHelper,err := helper.ValidateTokenJWT("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkamkiLCJlbWFpbCI6ImFkamlAZ21haWwiLCJleHAiOjE3NDAwMTAyODF9.ra-OqjU80QxUz0cJJu_pmIDzarAZWVtaS3yhczqpNpM");
+
+	// tryHelper,err := helper.GenerateJWT("adji","adji@gmail");
+
+	if err!=nil{
+		c.AbortWithStatusJSON(500,gin.H{
+			"Error":err.Error(),
+		})
+		return
+	}
 
 	c.AbortWithStatusJSON(200,gin.H{
 		"Hasil Response":tryHelper,
